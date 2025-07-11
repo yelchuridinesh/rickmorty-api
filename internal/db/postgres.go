@@ -12,9 +12,18 @@ import (
 var Database *sql.DB
 
 func InitPostgres() error {
-	connectionStr := os.Getenv("POSTGRES_ENV")
-	db, err := sql.Open("postgres", connectionStr)
+	user := os.Getenv("POSTGRES_USER")
+	pass := os.Getenv("POSTGRES_PASSWORD")
+	dbname := os.Getenv("POSTGRES_DB")
+	host := os.Getenv("POSTGRES_HOST")
+	port := os.Getenv("POSTGRES_PORT")
 
+	connStr := fmt.Sprintf(
+		"postgres://%s:%s@%s:%s/%s?sslmode=disable",
+		user, pass, host, port, dbname,
+	)
+
+	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		return err
 	}
