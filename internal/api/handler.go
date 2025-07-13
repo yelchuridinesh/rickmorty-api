@@ -2,6 +2,7 @@ package api
 
 import (
 	"Users/tendusmac/Desktop/NEU/Akamai/rickmorty-api/internal/db"
+	"Users/tendusmac/Desktop/NEU/Akamai/rickmorty-api/internal/metrics"
 	"net/http"
 	"strconv"
 
@@ -40,16 +41,19 @@ func GetCharactersHandler(c *gin.Context) {
 	offset := (page - 1) * limit
 
 	if chars, ok := getCharactersFromCache(limit, offset, sortBy); ok {
+		metrics.CacheHits.Inc()
+		metrics.CharactersProcessed.Add(float64(len(chars)))
 		c.JSON(http.StatusOK, chars)
 		return
 	}
 
+	metrics.CacheMisses.Inc()
 	chars, err := db.GetCharacters(limit, offset, sortBy)
 	if err != nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "failed to fetch characters from DB"})
 		return
 	}
-
+	metrics.CharactersProcessed.Add(float64(len(chars)))
 	c.JSON(http.StatusOK, chars)
 
 }
