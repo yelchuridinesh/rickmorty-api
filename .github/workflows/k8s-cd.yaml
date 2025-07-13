@@ -160,7 +160,7 @@ jobs:
           helm install monitoring prometheus-community/kube-prometheus-stack \
             --namespace monitoring --create-namespace \
             --set grafana.ingress.enabled=true \
-            --set grafana.ingress.annotations."nginx\.ingress\.kubernetes\.io/ssl-redirect"="true" \
+            --set-string grafana.ingress.annotations."nginx\.ingress\.kubernetes\.io/ssl-redirect"="true" \
             --set grafana.ingress.hosts[0]=grafana.127.0.0.1.nip.io \
             --set grafana.ingress.tls[0].hosts[0]=grafana.127.0.0.1.nip.io \
             --set grafana.ingress.tls[0].secretName=grafana-tls \
