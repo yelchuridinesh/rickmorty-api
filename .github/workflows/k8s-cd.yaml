@@ -63,6 +63,7 @@ jobs:
           kubectl get all -n ingress-nginx
           kubectl get svc -n ingress-nginx
           kubectl get pods -n ingress-nginx
+          kubectl get events -n ingress-nginx
           kubectl logs -n ingress-nginx -l app.kubernetes.io/instance=ingress-nginx
 
       
