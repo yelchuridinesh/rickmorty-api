@@ -1,0 +1,72 @@
+name: CD Pipeline
+
+on:
+  workflow_run:
+    workflows: ["Docker CI"]
+    types:
+      - completed
+
+jobs:
+  deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Set up Kind cluster
+        uses: helm/kind-action@v1.8.0
+        with:
+          cluster_name: rickmorty-cluster
+      
+      - name: Verify cluster is ready
+        run: kubectl get nodes
+
+      # - name: Install PostgreSQL on postgres namespace
+      #   run: |
+      #     helm repo add bitnami https://charts.bitnami.com/bitnami
+      #     helm repo update
+      #     kubectl create namespace postgres
+      #     helm install postgres bitnami/postgresql --namespace postgres \
+      #       --set auth.postgresPassword=password \
+      #       --set auth.username=postgres \
+      #       --set auth.database=rickmorty
+
+      # - name: Install Redis (auth disabled) on redis namespace
+      #   run: |
+      #     kubectl create namespace redis
+      #     helm install redis bitnami/redis --namespace redis \
+      #       --set auth.enabled=false
+
+      # - name: Install cert-manager on rickmorty namespace
+      #   run: |
+      #     kubectl create namespace rickmorty || true
+      #     helm repo add jetstack https://charts.jetstack.io
+      #     helm repo update
+      #     helm install cert-manager jetstack/cert-manager \
+      #       --namespace rickmorty \
+      #       --set installCRDs=true
+
+      # - name: Install ingress-nginx on rickmorty namespace
+      #   run: |
+      #     helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+      #     helm repo update
+      #     helm install ingress-nginx ingress-nginx/ingress-nginx \
+      #       --namespace rickmorty
+
+      # - name: Deploy app using Helm from OCI registry
+      #   run: |
+      #     helm registry login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
+      #     helm install rickmorty-app oci://ghcr.io/<your-org-or-username>/rickmorty-helm-chart \
+      #       --version <your-version> \
+      #       --namespace rickmorty \
+      #       -f values.yaml -f values-secret.yaml
+
+      # - name: Wait for app to be ready
+      #   run: kubectl rollout status deployment rickmorty-api -n rickmorty --timeout=180s
+
+      # - name: Run integration test against API
+      #   run: |
+      #     curl --fail http://rickmorty-api.rickmorty.svc.cluster.local:8080/healthcheck
+
