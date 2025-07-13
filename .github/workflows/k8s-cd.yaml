@@ -95,8 +95,7 @@ jobs:
           helm install rickmorty-app oci://ghcr.io/yelchuridinesh/helm/rickmorty-api \
             --version 1.0.0 \
             --namespace rickmorty \
-            --create-namespace \
-            -f values.yaml -f values-secret.yaml
+            -f values-secret.yaml
 
       - name: Wait for app to be ready
         run: kubectl rollout status deployment rickmorty-api -n rickmorty --timeout=180s
