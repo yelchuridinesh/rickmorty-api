@@ -160,7 +160,9 @@ jobs:
           helm install monitoring prometheus-community/kube-prometheus-stack \
             --namespace monitoring --create-namespace \
             --set grafana.ingress.enabled=true \
+            --set grafana.ingress.ingressClassName=nginx \
             --set-string grafana.ingress.annotations."nginx\.ingress\.kubernetes\.io/ssl-redirect"="true" \
+            --set-string grafana.ingress.annotations."cert-manager\.io/cluster-issuer"="selfsigned-issuer" \
             --set grafana.ingress.hosts[0]=grafana.127.0.0.1.nip.io \
             --set grafana.ingress.tls[0].hosts[0]=grafana.127.0.0.1.nip.io \
             --set grafana.ingress.tls[0].secretName=grafana-tls \
@@ -181,10 +183,10 @@ jobs:
             "panels": [
               {
                 "type": "graph",
-                "title": "Request Latency",
+                "title": "Request Latency (Histogram)",
                 "targets": [
                   {
-                    "expr": "http_request_duration_seconds_bucket{handler=\"/characters\"}",
+                    "expr": "rate(api_request_duration_seconds_bucket{handler=\"GetCharacters\"}[1m])",
                     "legendFormat": "{{le}}",
                     "refId": "A"
                   }
@@ -197,7 +199,7 @@ jobs:
                 "title": "Cache Hit Ratio",
                 "targets": [
                   {
-                    "expr": "cache_hits_total / (cache_hits_total + cache_misses_total)",
+                    "expr": "api_cache_hits_total / (api_cache_hits_total + api_cache_misses_total)",
                     "legendFormat": "hit ratio",
                     "refId": "B"
                   }
@@ -207,11 +209,11 @@ jobs:
               },
               {
                 "type": "graph",
-                "title": "API Error Rate",
+                "title": "Characters Processed",
                 "targets": [
                   {
-                    "expr": "rate(http_requests_total{status=~\"5..\"}[5m])",
-                    "legendFormat": "5xx errors",
+                    "expr": "increase(api_characters_processed_total[5m])",
+                    "legendFormat": "processed",
                     "refId": "C"
                   }
                 ],
@@ -223,6 +225,7 @@ jobs:
             "version": 1
           }
           EOF
+
 
       - name: Create Grafana Dashboard ConfigMap
         run: |
@@ -243,6 +246,22 @@ jobs:
         run: |
           EXTERNAL_IP=$(kubectl get svc ingress-nginx-controller -n ingress-nginx -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
           curl -k -H "Host: grafana.127.0.0.1.nip.io" https://${EXTERNAL_IP}
+      
+      - name: Download and configure ngrok
+        run: |
+          curl -s https://ngrok-agent.s3.amazonaws.com/ngrok.asc | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null
+          echo "deb https://ngrok-agent.s3.amazonaws.com buster main" | sudo tee /etc/apt/sources.list.d/ngrok.list
+          sudo apt update && sudo apt install ngrok
+
+      - name: Start ngrok tunnel for Grafana HTTPS
+        run: |
+          ngrok config add-authtoken ${{ secrets.NGROK_AUTH_TOKEN }}
+          nohup ngrok http https://127.0.0.1 --host-header=grafana.127.0.0.1.nip.io > ngrok.log &
+      
+      - name: Print Ngrok public URL
+        run: |
+          sleep 10  # give ngrok time to start
+          curl -s http://127.0.0.1:4040/api/tunnels | jq -r '.tunnels[0].public_url'
 
 
       - name: Start SSH session (debug)
