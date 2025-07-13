@@ -59,17 +59,31 @@ jobs:
       - name : check helm releases
         run: |
           helm list -A
+      
+      - name: Login to GitHub Container Registry
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io \
+            --username "${{ github.actor }}" --password-stdin
+      
 
-      # - name: Deploy app using Helm from OCI registry
-      #   run: |
-      #     helm registry login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
-      #     helm install rickmorty-app oci://ghcr.io/<your-org-or-username>/rickmorty-helm-chart \
-      #       --version <your-version> \
-      #       --namespace rickmorty \
-      #       -f values.yaml -f values-secret.yaml
 
-      # - name: Wait for app to be ready
-      #   run: kubectl rollout status deployment rickmorty-api -n rickmorty --timeout=180s
+      - name: Write Helm secret values
+        run: |
+          cat <<EOF > values-secret.yaml
+          postgresconfig:
+            user:     "${{ secrets.PG_USERNAME }}"
+            password: "${{ secrets.PG_PASSWORD }}"
+          EOF
+
+      - name: Deploy app using Helm
+        run: |
+          helm install rickmorty-app oci://ghcr.io/yelchuridinesh/rickmorty-helm-chart \
+            --version 1.0.0
+            --namespace rickmorty \
+            -f values.yaml -f values-secret.yaml
+
+      - name: Wait for app to be ready
+        run: kubectl rollout status deployment rickmorty-api -n rickmorty --timeout=180s
 
       # - name: Run integration test against API
       #   run: |
