@@ -115,18 +115,20 @@ jobs:
       
       - name: get all resources in rickmorty namespace
         run: kubectl get all -n rickmorty
+      
+      - name: Start SSH session (debug)
+        uses: mxschmitt/action-tmate@v3
+        timeout-minutes: 10
 
-      - name: Wait for app to be ready
-        run: kubectl rollout status deployment rickmorty-app-rickmorty-api -n rickmorty --timeout=180s
+      # - name: Wait for app to be ready
+      #   run: |
+      #     kubectl 
+      #     kubectl rollout status deployment rickmorty-app-rickmorty-api -n rickmorty --timeout=180s
 
       - name: Run integration test against API Ingress
         run: |
           echo "Waiting for Ingress to become ready..."
           sleep 10
           curl --fail --retry 5 --retry-delay 5 http://rickmorty-helm-git.127.0.0.1.nip.io/healthcheck
-
-      - name: Start SSH session (debug)
-        uses: mxschmitt/action-tmate@v3
-        timeout-minutes: 10
 
 
