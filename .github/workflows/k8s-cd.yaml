@@ -15,10 +15,13 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v4
 
-      - name: Set up KinD cluster
+      - name: Set up Kind cluster
         uses: helm/kind-action@v1.8.0
         with:
           cluster_name: rickmorty-cluster
+      
+      - name: Verify cluster is ready
+        run: kubectl get nodes
 
       # - name: Install PostgreSQL on postgres namespace
       #   run: |
