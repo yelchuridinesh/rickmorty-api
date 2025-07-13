@@ -59,6 +59,11 @@ jobs:
       - name : check helm releases
         run: |
           helm list -A
+          kubectl get all -n ingress-nginx
+          kubectl get svc -n ingress-nginx
+          kubectl get pods -n ingress-nginx
+          kubectl logs -n ingress-nginx -l app.kubernetes.io/instance=ingress-nginx
+
       
       - name: Login to GitHub Container Registry
         run: |
