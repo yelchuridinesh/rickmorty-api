@@ -15,10 +15,26 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v4
 
+      - name: Write kind cluster config
+        run: |
+          cat <<EOF > kind-config.yaml
+          kind: Cluster
+          apiVersion: kind.x-k8s.io/v1alpha4
+          nodes:
+            - role: control-plane
+              extraPortMappings:
+                - containerPort: 80
+                  hostPort: 80
+                - containerPort: 443
+                  hostPort: 443
+          EOF
+
+
       - name: Set up Kind cluster
         uses: helm/kind-action@v1.8.0
         with:
           cluster_name: rickmorty-cluster
+          config: kind-config.yaml
       
       - name: Verify cluster is ready
         run: kubectl get nodes
@@ -96,11 +112,21 @@ jobs:
             --version 1.0.0 \
             --namespace rickmorty \
             -f values-secret.yaml
+      
+      - name: get all resources in rickmorty namespace
+        run: kubectl get all -n rickmorty
 
       - name: Wait for app to be ready
-        run: kubectl rollout status deployment rickmorty-app -n rickmorty --timeout=180s
+        run: kubectl rollout status deployment rickmorty-app-rickmorty-api -n rickmorty --timeout=180s
 
-      # - name: Run integration test against API
-      #   run: |
-      #     curl --fail http://rickmorty-api.rickmorty.svc.cluster.local:8080/healthcheck
+      - name: Run integration test against API Ingress
+        run: |
+          echo "Waiting for Ingress to become ready..."
+          sleep 10
+          curl --fail --retry 5 --retry-delay 5 http://rickmorty-helm-git.127.0.0.1.nip.io/healthcheck
+
+      - name: Start SSH session (debug)
+        uses: mxschmitt/action-tmate@v3
+        timeout-minutes: 10
+
 
