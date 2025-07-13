@@ -23,37 +23,42 @@ jobs:
       - name: Verify cluster is ready
         run: kubectl get nodes
 
-      # - name: Install PostgreSQL on postgres namespace
-      #   run: |
-      #     helm repo add bitnami https://charts.bitnami.com/bitnami
-      #     helm repo update
-      #     kubectl create namespace postgres
-      #     helm install postgres bitnami/postgresql --namespace postgres \
-      #       --set auth.postgresPassword=password \
-      #       --set auth.username=postgres \
-      #       --set auth.database=rickmorty
+      - name: Install PostgreSQL on postgres namespace
+        run: |
+          helm repo add bitnami https://charts.bitnami.com/bitnami
+          helm repo update
+          kubectl create namespace postgres
+          helm install postgres bitnami/postgresql --namespace postgres \
+            --set auth.postgresPassword=${{ secrets.PG_PASSWORD }} \
+            --set auth.username=${{ secrets.PG_USERNAME }} \
+            --set auth.database=${{ secrets.PG_DATABASE }}
 
-      # - name: Install Redis (auth disabled) on redis namespace
-      #   run: |
-      #     kubectl create namespace redis
-      #     helm install redis bitnami/redis --namespace redis \
-      #       --set auth.enabled=false
 
-      # - name: Install cert-manager on rickmorty namespace
-      #   run: |
-      #     kubectl create namespace rickmorty || true
-      #     helm repo add jetstack https://charts.jetstack.io
-      #     helm repo update
-      #     helm install cert-manager jetstack/cert-manager \
-      #       --namespace rickmorty \
-      #       --set installCRDs=true
+      - name: Install Redis (auth disabled) on redis namespace
+        run: |
+          kubectl create namespace redis
+          helm install redis bitnami/redis --namespace redis \
+            --set auth.enabled=false
 
-      # - name: Install ingress-nginx on rickmorty namespace
-      #   run: |
-      #     helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
-      #     helm repo update
-      #     helm install ingress-nginx ingress-nginx/ingress-nginx \
-      #       --namespace rickmorty
+      - name: Install cert-manager on rickmorty namespace
+        run: |
+          kubectl create namespace rickmorty || true
+          helm repo add jetstack https://charts.jetstack.io
+          helm repo update
+          helm install cert-manager jetstack/cert-manager \
+            --namespace rickmorty \
+            --set installCRDs=true
+
+      - name: Install ingress-nginx on rickmorty namespace
+        run: |
+          helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+          helm repo update
+          helm install ingress-nginx ingress-nginx/ingress-nginx \
+            --namespace rickmorty
+      
+      - name : check helm releases
+        run: |
+          helm list -A
 
       # - name: Deploy app using Helm from OCI registry
       #   run: |
