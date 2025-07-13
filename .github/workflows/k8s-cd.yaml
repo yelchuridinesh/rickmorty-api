@@ -133,7 +133,7 @@ jobs:
       
       - name: Start SSH session (debug)
         uses: mxschmitt/action-tmate@v3
-        timeout-minutes: 10
+        timeout-minutes: 20
 
       # - name: Wait for app to be ready
       #   run: |
