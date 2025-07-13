@@ -144,16 +144,6 @@ jobs:
           sleep 15
           EXTERNAL_IP=$(kubectl get svc ingress-nginx-controller -n ingress-nginx -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
           echo $EXTERNAL_IP
-      
-      - name: Start SSH session (debug)
-        uses: mxschmitt/action-tmate@v3
-        timeout-minutes: 20
-        continue-on-error: true
-
-      # - name: Wait for app to be ready
-      #   run: |
-      #     kubectl 
-      #     kubectl rollout status deployment rickmorty-app-rickmorty-api -n rickmorty --timeout=180s
 
       - name: Run integration test against API Ingress
         run: |
@@ -162,5 +152,101 @@ jobs:
           EXTERNAL_IP=$(kubectl get svc ingress-nginx-controller -n ingress-nginx -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
           echo $EXTERNAL_IP
           curl -k -H "Host: rickmorty-helm-git.127.0.0.1.nip.io" https://${EXTERNAL_IP}/characters?page=1&limit=5
+      
+      - name: Install kube-prometheus-stack
+        run: |
+          helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+          helm repo update
+          helm install monitoring prometheus-community/kube-prometheus-stack \
+            --namespace monitoring --create-namespace \
+            --set grafana.ingress.enabled=true \
+            --set grafana.ingress.annotations."nginx\.ingress\.kubernetes\.io/ssl-redirect"="true" \
+            --set grafana.ingress.hosts[0]=grafana.127.0.0.1.nip.io \
+            --set grafana.ingress.tls[0].hosts[0]=grafana.127.0.0.1.nip.io \
+            --set grafana.ingress.tls[0].secretName=grafana-tls \
+            --set grafana.sidecar.dashboards.enabled=true \
+            --set grafana.sidecar.dashboards.label=grafana_dashboard \
+            --set grafana.sidecar.dashboards.folder=/tmp/dashboards \
+            --set prometheus.service.type=ClusterIP \
+            --set alertmanager.service.type=ClusterIP
 
+      - name: Generate Rick and Morty Grafana Dashboard JSON
+        run: |
+          cat <<EOF > grafana-dashboard.json
+          {
+            "annotations": {
+              "list": [{"builtIn": 1, "type": "dashboard"}]
+            },
+            "title": "Rick and Morty API Metrics",
+            "panels": [
+              {
+                "type": "graph",
+                "title": "Request Latency",
+                "targets": [
+                  {
+                    "expr": "http_request_duration_seconds_bucket{handler=\"/characters\"}",
+                    "legendFormat": "{{le}}",
+                    "refId": "A"
+                  }
+                ],
+                "datasource": "Prometheus",
+                "id": 1
+              },
+              {
+                "type": "graph",
+                "title": "Cache Hit Ratio",
+                "targets": [
+                  {
+                    "expr": "cache_hits_total / (cache_hits_total + cache_misses_total)",
+                    "legendFormat": "hit ratio",
+                    "refId": "B"
+                  }
+                ],
+                "datasource": "Prometheus",
+                "id": 2
+              },
+              {
+                "type": "graph",
+                "title": "API Error Rate",
+                "targets": [
+                  {
+                    "expr": "rate(http_requests_total{status=~\"5..\"}[5m])",
+                    "legendFormat": "5xx errors",
+                    "refId": "C"
+                  }
+                ],
+                "datasource": "Prometheus",
+                "id": 3
+              }
+            ],
+            "schemaVersion": 26,
+            "version": 1
+          }
+          EOF
+
+      - name: Create Grafana Dashboard ConfigMap
+        run: |
+          kubectl create configmap rickmorty-grafana-dashboard \
+            --from-file=grafana-dashboard.json \
+            -n monitoring \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Label ConfigMap for Grafana Sidecar
+        run: |
+          kubectl label configmap rickmorty-grafana-dashboard \
+            grafana_dashboard=1 -n monitoring --overwrite
+
+      - name: Wait for Grafana Rollout
+        run: kubectl rollout status deployment monitoring-grafana -n monitoring --timeout=180s
+
+      - name: Verify Grafana Ingress Access
+        run: |
+          EXTERNAL_IP=$(kubectl get svc ingress-nginx-controller -n ingress-nginx -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+          curl -k -H "Host: grafana.127.0.0.1.nip.io" https://${EXTERNAL_IP}
+
+
+      - name: Start SSH session (debug)
+        uses: mxschmitt/action-tmate@v3
+        timeout-minutes: 30
+        continue-on-error: true
 
