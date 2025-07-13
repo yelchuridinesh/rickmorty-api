@@ -1,0 +1,41 @@
+# Binaries
+bin/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Vendor dependencies (if you’re using Go modules, you likely don't have a vendor folder)
+vendor/
+
+# Build output
+build/
+dist/
+
+# IDE/editor configs
+*.swp
+*~
+.idea/
+.vscode/
+
+# Git
+.git
+.gitignore
+
+# Docker files
+Dockerfile*       # if you have variants like Dockerfile.dev
+.dockerignore
+
+# Logs and temporary files
+*.log
+*.tmp
+*.cache
+*.pid
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Kubernetes / Helm charts (if stored in this repo)
+charts/
+helm/
