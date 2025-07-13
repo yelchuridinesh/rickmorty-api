@@ -1,0 +1,41 @@
+name: Docker CI
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-test-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # --- Build rickmorty-api ---
+      - name: Build API Docker image
+        run: |
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/rickmorty-api:latest -f Dockerfile.server .
+
+      # --- Build rickmorty-ingest ---
+      - name: Build Ingest Docker image
+        run: |
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/rickmorty-ingest:latest -f Dockerfile.ingest .
+
+      # --- Push Images ---
+      - name: Push API Docker image
+        run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/rickmorty-api:latest
+
+      - name: Push Ingest Docker image
+        run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/rickmorty-ingest:latest
+
