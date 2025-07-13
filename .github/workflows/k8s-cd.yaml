@@ -73,6 +73,19 @@ jobs:
           helm install cert-manager jetstack/cert-manager \
             --namespace rickmorty \
             --set installCRDs=true
+      
+      - name: Install Jaeger (all-in-one) in observability namespace
+        run: |
+          helm repo add jaegertracing https://jaegertracing.github.io/helm-charts
+          helm repo update
+          kubectl create namespace observability || true
+          helm install jaeger jaegertracing/jaeger \
+            --namespace observability \
+            --set provisionDataStore.cassandra=false \
+            --set storage.type=memory \
+            --set query.basePath="/" \
+            --set ingress.enabled=false
+
 
       - name: Install ingress-nginx on rickmorty namespace
         run: |
@@ -127,13 +140,15 @@ jobs:
 
       - name: Start tunnel (in background)
         run: |
-          sudo minikube tunnel > /dev/null 2>&1 &
-      
-
+          minikube tunnel &
+          sleep 15
+          EXTERNAL_IP=$(kubectl get svc ingress-nginx-controller -n ingress-nginx -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+          echo $EXTERNAL_IP
       
       - name: Start SSH session (debug)
         uses: mxschmitt/action-tmate@v3
         timeout-minutes: 20
+        continue-on-error: true
 
       # - name: Wait for app to be ready
       #   run: |
@@ -144,6 +159,8 @@ jobs:
         run: |
           echo "Waiting for Ingress to become ready..."
           sleep 10
-          curl --fail --retry 5 --retry-delay 5 http://rickmorty-helm-git.127.0.0.1.nip.io/healthcheck
+          EXTERNAL_IP=$(kubectl get svc ingress-nginx-controller -n ingress-nginx -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+          echo $EXTERNAL_IP
+          curl -k -H "Host: rickmorty-helm-git.127.0.0.1.nip.io" https://${EXTERNAL_IP}/characters?page=1&limit=5
 
 

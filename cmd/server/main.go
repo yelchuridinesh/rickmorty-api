@@ -4,10 +4,14 @@ import (
 	"Users/tendusmac/Desktop/NEU/Akamai/rickmorty-api/internal/api"
 	"Users/tendusmac/Desktop/NEU/Akamai/rickmorty-api/internal/cache"
 	"Users/tendusmac/Desktop/NEU/Akamai/rickmorty-api/internal/db"
+	"Users/tendusmac/Desktop/NEU/Akamai/rickmorty-api/internal/tracing"
+	"context"
 	"log"
 )
 
 func main() {
+	shutdown := tracing.InitTracer("rickmorty-api")
+	defer shutdown(context.Background())
 	if err := db.InitPostgres(); err != nil {
 		log.Fatal("DB init failed:", err)
 	}

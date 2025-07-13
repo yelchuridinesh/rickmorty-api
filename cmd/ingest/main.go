@@ -4,11 +4,15 @@ import (
 	"Users/tendusmac/Desktop/NEU/Akamai/rickmorty-api/internal/cache"
 	"Users/tendusmac/Desktop/NEU/Akamai/rickmorty-api/internal/client"
 	"Users/tendusmac/Desktop/NEU/Akamai/rickmorty-api/internal/db"
+	"Users/tendusmac/Desktop/NEU/Akamai/rickmorty-api/internal/tracing"
+	"context"
 	"fmt"
 	"log"
 )
 
 func main() {
+	shutdown := tracing.InitTracer("rickmorty-api")
+	defer shutdown(context.Background())
 	cache.InitRedis()
 
 	if err := db.InitPostgres(); err != nil {
