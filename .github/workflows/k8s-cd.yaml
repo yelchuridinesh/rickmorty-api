@@ -55,7 +55,7 @@ jobs:
           helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
           helm repo update
           helm install ingress-nginx ingress-nginx/ingress-nginx \
-            --namespace ingress-nginx
+            --namespace ingress-nginx --wait
       
       - name : check helm releases
         run: |
@@ -80,6 +80,14 @@ jobs:
             user:     "${{ secrets.PG_USERNAME }}"
             password: "${{ secrets.PG_PASSWORD }}"
           EOF
+      
+      - name: Wait for Ingress NGINX
+        run: |
+          kubectl rollout status deployment ingress-nginx-controller -n ingress-nginx --timeout=240s
+          kubectl get validatingwebhookconfigurations.admissionregistration.k8s.io | grep ingress
+          kubectl logs -n ingress-nginx -l app.kubernetes.io/instance=ingress-nginx
+
+
 
       - name: Deploy app using Helm
         run: |
