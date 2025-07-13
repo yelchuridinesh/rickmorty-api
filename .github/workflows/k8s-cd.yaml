@@ -77,7 +77,7 @@ jobs:
 
       - name: Deploy app using Helm
         run: |
-          helm install rickmorty-app oci://ghcr.io/yelchuridinesh/rickmorty-api \
+          helm install rickmorty-app oci://ghcr.io/yelchuridinesh/helm/rickmorty-api \
             --version 1.0.0
             --namespace rickmorty \
             -f values.yaml -f values-secret.yaml
