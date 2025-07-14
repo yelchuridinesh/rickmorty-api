@@ -95,26 +95,6 @@ jobs:
           helm install ingress-nginx ingress-nginx/ingress-nginx \
             --namespace ingress-nginx
       
-      - name: Install kube-prometheus-stack
-        run: |
-          helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-          helm repo update
-          helm install monitoring prometheus-community/kube-prometheus-stack \
-            --namespace monitoring --create-namespace \
-            --set grafana.ingress.enabled=true \
-            --set grafana.ingress.ingressClassName=nginx \
-            --set-string grafana.ingress.annotations."nginx\.ingress\.kubernetes\.io/ssl-redirect"="true" \
-            --set-string grafana.ingress.annotations."cert-manager\.io/cluster-issuer"="selfsigned-issuer" \
-            --set grafana.ingress.hosts[0]=grafana.127.0.0.1.nip.io \
-            --set grafana.ingress.tls[0].hosts[0]=grafana.127.0.0.1.nip.io \
-            --set grafana.ingress.tls[0].secretName=grafana-tls \
-            --set grafana.sidecar.dashboards.enabled=true \
-            --set grafana.sidecar.dashboards.label=grafana_dashboard \
-            --set grafana.sidecar.dashboards.folder=/tmp/dashboards \
-            --set prometheus.service.type=ClusterIP \
-            --set alertmanager.service.type=ClusterIP
-
-      
       - name: Login to GitHub Container Registry
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io \
@@ -136,7 +116,24 @@ jobs:
           kubectl get validatingwebhookconfigurations.admissionregistration.k8s.io | grep ingress
           kubectl logs -n ingress-nginx -l app.kubernetes.io/instance=ingress-nginx
 
-
+      - name: Install kube-prometheus-stack
+        run: |
+          helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+          helm repo update
+          helm install monitoring prometheus-community/kube-prometheus-stack \
+            --namespace monitoring --create-namespace \
+            --set grafana.ingress.enabled=true \
+            --set grafana.ingress.ingressClassName=nginx \
+            --set-string grafana.ingress.annotations."nginx\.ingress\.kubernetes\.io/ssl-redirect"="true" \
+            --set-string grafana.ingress.annotations."cert-manager\.io/cluster-issuer"="selfsigned-issuer" \
+            --set grafana.ingress.hosts[0]=grafana.127.0.0.1.nip.io \
+            --set grafana.ingress.tls[0].hosts[0]=grafana.127.0.0.1.nip.io \
+            --set grafana.ingress.tls[0].secretName=grafana-tls \
+            --set grafana.sidecar.dashboards.enabled=true \
+            --set grafana.sidecar.dashboards.label=grafana_dashboard \
+            --set grafana.sidecar.dashboards.folder=/tmp/dashboards \
+            --set prometheus.service.type=ClusterIP \
+            --set alertmanager.service.type=ClusterIP
 
       - name: Deploy app using Helm
         run: |
