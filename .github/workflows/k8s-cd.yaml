@@ -494,7 +494,7 @@ jobs:
             "version": 1,
             "weekStart": ""
           }
-    EOF
+          EOF
 
 
       - name: Create Grafana Dashboard ConfigMap
