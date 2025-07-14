@@ -112,3 +112,60 @@ A service that fetches, caches, and exposes Rick & Morty character data with obs
 ## GitOps Consideration
 
 > **Note**: This project uses CI/CD-based installations for demonstration. In a production environment, consider adopting a GitOps approach (e.g., ArgoCD) to manage Helm chart synchronization across multiple repositories and namespaces more cleanly.Also, I haven't used Umbrella structure as it creates lot of complexity 
+
+
+```mermaid
+flowchart LR
+
+  %% CI/CD Pipeline
+  subgraph CICD["CI/CD Pipeline"]
+    Repo[Code Repository]
+    GA[GitHub Actions Runner]
+    Repo --> GA
+    GA --> BuildDocker[Build & Test Docker Images]
+    BuildDocker --> PushDocker[Push to Container Registry]
+    GA --> BuildHelm[Package Helm Chart]
+    BuildHelm --> PushHelm[Push Helm Chart to OCI Registry]
+    GA --> Deploy[Deploy via Helm]
+  end
+
+  %% Kubernetes Cluster
+  subgraph K8s["Kubernetes Cluster"]
+    
+    subgraph Ingest["Ingest Pipeline"]
+      IC[InitContainer / CronJob]
+      IC --> Redis[Redis Cache]
+      IC --> Postgres[(PostgreSQL)]
+    end
+
+    subgraph APIService["API Service"]
+      API_Svc[Go Gin Server]
+      API_Svc --> Redis
+      Redis --> API_Svc
+      API_Svc --> Postgres
+      API_Svc -->|"/metrics"| Prom[Prometheus]
+      API_Svc -->|traces| Jaeger[Jaeger]
+    end
+
+    subgraph Network["Service & Ingress"]
+      Svc[Service: rickmorty-api]
+      Ingress[Ingress → nginx]
+      API_Svc --> Svc
+      Svc --> Ingress
+      Ingress -.-> Client[Client / Browser]
+    end
+
+    subgraph Obs["Observability Stack"]
+      Prom --> Graf[Grafana Dashboard]
+      Jaeger --> Graf
+      Prom --> AM[Alertmanager]
+      AM --> Pager[On-Call / PagerDuty]
+    end
+
+  end
+
+  %% CI/CD → Kubernetes link
+  Deploy -.->|"helm pulls charts & images"| K8s
+
+
+
