@@ -552,6 +552,11 @@ jobs:
         run: |
           sleep 10  # give ngrok time to start
           curl -s http://127.0.0.1:4040/api/tunnels | jq -r '.tunnels[] | select(.proto=="https") | .public_url'
+      
+      - name: Print one of the Alerts
+        run: |
+          kubectl -n monitoring port-forward svc/prometheus-operated 9090:9090 &
+          curl -s http://localhost:9090/api/v1/rules   | jq '.data.groups[] | select(.name=="rickmorty-app-rickmorty-api-low-throughput")'
 
 
       - name: Start SSH session (debug)
