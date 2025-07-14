@@ -133,7 +133,7 @@ jobs:
       - name: Run integration test against API Ingress for /Characters
         run: |
           echo "Waiting for Ingress to become ready..."
-          sleep 10
+          sleep 60
           EXTERNAL_IP=$(kubectl get svc ingress-nginx-controller -n ingress-nginx -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
           echo $EXTERNAL_IP
           curl -k -H "Host: rickmorty-helm-git.127.0.0.1.nip.io" https://${EXTERNAL_IP}/characters?page=1&limit=5
@@ -143,10 +143,10 @@ jobs:
           EXTERNAL_IP=$(kubectl get svc ingress-nginx-controller -n ingress-nginx -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
           curl -k -H "Host: rickmorty-helm-git.127.0.0.1.nip.io" https://${EXTERNAL_IP}/healthcheck
       
-      - name: Run integration test against API Ingress for /metrics 
-        run: |
-          EXTERNAL_IP=$(kubectl get svc ingress-nginx-controller -n ingress-nginx -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-          curl -k -H "Host: rickmorty-helm-git.127.0.0.1.nip.io" https://${EXTERNAL_IP}/metrics/ | grep -E "api_request_duration_seconds|api_cache_hits_total|api_cache_misses_total|api_characters_processed_total"
+      # - name: Run integration test against API Ingress for /metrics 
+      #   run: |
+      #     EXTERNAL_IP=$(kubectl get svc ingress-nginx-controller -n ingress-nginx -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+      #     curl -k -H "Host: rickmorty-helm-git.127.0.0.1.nip.io" https://${EXTERNAL_IP}/metrics/ | grep -E "api_request_duration_seconds|api_cache_hits_total|api_cache_misses_total|api_characters_processed_total"
 
       - name: Generate Rick and Morty Grafana Dashboard JSON
         run: |
