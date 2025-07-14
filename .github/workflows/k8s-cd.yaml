@@ -177,54 +177,324 @@ jobs:
           cat <<EOF > grafana-dashboard.json
           {
             "annotations": {
-              "list": [{"builtIn": 1, "type": "dashboard"}]
+              "list": [
+                {
+                  "builtIn": 1,
+                  "datasource": "-- Grafana --",
+                  "enable": true,
+                  "hide": true,
+                  "iconColor": "rgba(0, 211, 255, 1)",
+                  "name": "Annotations & Alerts",
+                  "type": "dashboard"
+                }
+              ]
             },
-            "title": "Rick and Morty API Metrics",
+            "editable": true,
+            "fiscalYearStartMonth": 0,
+            "graphTooltip": 0,
+            "id": null,
+            "links": [],
+            "liveNow": false,
             "panels": [
               {
-                "type": "graph",
-                "title": "Request Latency (Histogram)",
-                "targets": [
-                  {
-                    "expr": "rate(api_request_duration_seconds_bucket{handler=\"GetCharacters\"}[1m])",
-                    "legendFormat": "{{le}}",
-                    "refId": "A"
+                "datasource": {
+                  "type": "prometheus",
+                  "uid": "prometheus"
+                },
+                "fieldConfig": {
+                  "defaults": {
+                    "color": {
+                      "mode": "palette-classic"
+                    },
+                    "custom": {
+                      "axisLabel": "",
+                      "axisPlacement": "auto",
+                      "barAlignment": 0,
+                      "drawStyle": "line",
+                      "fillOpacity": 0,
+                      "gradientMode": "none",
+                      "hideFrom": {
+                        "legend": false,
+                        "tooltip": false,
+                        "vis": false
+                      },
+                      "lineInterpolation": "linear",
+                      "lineWidth": 1,
+                      "pointSize": 5,
+                      "scaleDistribution": {
+                        "type": "linear"
+                      },
+                      "showPoints": "auto",
+                      "spanNulls": false,
+                      "stacking": {
+                        "group": "A",
+                        "mode": "none"
+                      },
+                      "thresholdsStyle": {
+                        "mode": "off"
+                      }
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                      "mode": "absolute",
+                      "steps": [
+                        {
+                          "color": "green",
+                          "value": null
+                        },
+                        {
+                          "color": "red",
+                          "value": 80
+                        }
+                      ]
+                    },
+                    "unit": "s"
+                  },
+                  "overrides": []
+                },
+                "gridPos": {
+                  "h": 8,
+                  "w": 12,
+                  "x": 0,
+                  "y": 0
+                },
+                "id": 1,
+                "options": {
+                  "legend": {
+                    "calcs": [],
+                    "displayMode": "list",
+                    "placement": "bottom"
+                  },
+                  "tooltip": {
+                    "mode": "single",
+                    "sort": "none"
                   }
-                ],
-                "datasource": "Prometheus",
-                "id": 1
-              },
-              {
-                "type": "graph",
-                "title": "Cache Hit Ratio",
+                },
                 "targets": [
                   {
-                    "expr": "api_cache_hits_total / (api_cache_hits_total + api_cache_misses_total)",
-                    "legendFormat": "hit ratio",
+                    "datasource": {
+                      "type": "prometheus",
+                      "uid": "prometheus"
+                    },
+                    "expr": "histogram_quantile(0.95, rate(api_request_duration_seconds_bucket{handler=\"GetCharacters\"}[5m]))",
+                    "interval": "",
+                    "legendFormat": "95th percentile",
+                    "refId": "A"
+                  },
+                  {
+                    "datasource": {
+                      "type": "prometheus",
+                      "uid": "prometheus"
+                    },
+                    "expr": "histogram_quantile(0.50, rate(api_request_duration_seconds_bucket{handler=\"GetCharacters\"}[5m]))",
+                    "interval": "",
+                    "legendFormat": "50th percentile",
                     "refId": "B"
                   }
                 ],
-                "datasource": "Prometheus",
-                "id": 2
+                "title": "Request Latency (Histogram)",
+                "type": "timeseries"
               },
               {
-                "type": "graph",
-                "title": "Characters Processed",
+                "datasource": {
+                  "type": "prometheus",
+                  "uid": "prometheus"
+                },
+                "fieldConfig": {
+                  "defaults": {
+                    "color": {
+                      "mode": "palette-classic"
+                    },
+                    "custom": {
+                      "axisLabel": "",
+                      "axisPlacement": "auto",
+                      "barAlignment": 0,
+                      "drawStyle": "line",
+                      "fillOpacity": 0,
+                      "gradientMode": "none",
+                      "hideFrom": {
+                        "legend": false,
+                        "tooltip": false,
+                        "vis": false
+                      },
+                      "lineInterpolation": "linear",
+                      "lineWidth": 1,
+                      "pointSize": 5,
+                      "scaleDistribution": {
+                        "type": "linear"
+                      },
+                      "showPoints": "auto",
+                      "spanNulls": false,
+                      "stacking": {
+                        "group": "A",
+                        "mode": "none"
+                      },
+                      "thresholdsStyle": {
+                        "mode": "off"
+                      }
+                    },
+                    "mappings": [],
+                    "max": 1,
+                    "min": 0,
+                    "thresholds": {
+                      "mode": "absolute",
+                      "steps": [
+                        {
+                          "color": "green",
+                          "value": null
+                        },
+                        {
+                          "color": "red",
+                          "value": 80
+                        }
+                      ]
+                    },
+                    "unit": "percentunit"
+                  },
+                  "overrides": []
+                },
+                "gridPos": {
+                  "h": 8,
+                  "w": 12,
+                  "x": 12,
+                  "y": 0
+                },
+                "id": 2,
+                "options": {
+                  "legend": {
+                    "calcs": [],
+                    "displayMode": "list",
+                    "placement": "bottom"
+                  },
+                  "tooltip": {
+                    "mode": "single",
+                    "sort": "none"
+                  }
+                },
                 "targets": [
                   {
-                    "expr": "increase(api_characters_processed_total[5m])",
-                    "legendFormat": "processed",
-                    "refId": "C"
+                    "datasource": {
+                      "type": "prometheus",
+                      "uid": "prometheus"
+                    },
+                    "expr": "rate(api_cache_hits_total[5m]) / (rate(api_cache_hits_total[5m]) + rate(api_cache_misses_total[5m]))",
+                    "interval": "",
+                    "legendFormat": "Cache Hit Ratio",
+                    "refId": "A"
                   }
                 ],
-                "datasource": "Prometheus",
-                "id": 3
+                "title": "Cache Hit Ratio",
+                "type": "timeseries"
+              },
+              {
+                "datasource": {
+                  "type": "prometheus",
+                  "uid": "prometheus"
+                },
+                "fieldConfig": {
+                  "defaults": {
+                    "color": {
+                      "mode": "palette-classic"
+                    },
+                    "custom": {
+                      "axisLabel": "",
+                      "axisPlacement": "auto",
+                      "barAlignment": 0,
+                      "drawStyle": "line",
+                      "fillOpacity": 0,
+                      "gradientMode": "none",
+                      "hideFrom": {
+                        "legend": false,
+                        "tooltip": false,
+                        "vis": false
+                      },
+                      "lineInterpolation": "linear",
+                      "lineWidth": 1,
+                      "pointSize": 5,
+                      "scaleDistribution": {
+                        "type": "linear"
+                      },
+                      "showPoints": "auto",
+                      "spanNulls": false,
+                      "stacking": {
+                        "group": "A",
+                        "mode": "none"
+                      },
+                      "thresholdsStyle": {
+                        "mode": "off"
+                      }
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                      "mode": "absolute",
+                      "steps": [
+                        {
+                          "color": "green",
+                          "value": null
+                        },
+                        {
+                          "color": "red",
+                          "value": 80
+                        }
+                      ]
+                    },
+                    "unit": "short"
+                  },
+                  "overrides": []
+                },
+                "gridPos": {
+                  "h": 8,
+                  "w": 12,
+                  "x": 0,
+                  "y": 8
+                },
+                "id": 3,
+                "options": {
+                  "legend": {
+                    "calcs": [],
+                    "displayMode": "list",
+                    "placement": "bottom"
+                  },
+                  "tooltip": {
+                    "mode": "single",
+                    "sort": "none"
+                  }
+                },
+                "targets": [
+                  {
+                    "datasource": {
+                      "type": "prometheus",
+                      "uid": "prometheus"
+                    },
+                    "expr": "rate(api_characters_processed_total[5m])",
+                    "interval": "",
+                    "legendFormat": "Characters Processed/sec",
+                    "refId": "A"
+                  }
+                ],
+                "title": "Characters Processed Rate",
+                "type": "timeseries"
               }
             ],
-            "schemaVersion": 26,
-            "version": 1
+            "refresh": "5s",
+            "schemaVersion": 36,
+            "style": "dark",
+            "tags": ["rickmorty", "api", "metrics"],
+            "templating": {
+              "list": []
+            },
+            "time": {
+              "from": "now-1h",
+              "to": "now"
+            },
+            "timepicker": {},
+            "timezone": "",
+            "title": "Rick and Morty API Metrics",
+            "uid": "rickmorty-api-metrics",
+            "version": 1,
+            "weekStart": ""
           }
-          EOF
+    EOF
 
 
       - name: Create Grafana Dashboard ConfigMap
