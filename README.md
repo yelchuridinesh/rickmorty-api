@@ -131,38 +131,41 @@ flowchart LR
 
   %% Kubernetes Cluster
   subgraph K8s["Kubernetes Cluster"]
+    
     subgraph Ingest["Ingest Pipeline"]
       IC[InitContainer / CronJob]
       IC --> Redis[Redis Cache]
       IC --> Postgres[(PostgreSQL)]
     end
 
-    subgraph API["API Service"]
-      API[Go Gin Server]
-      API --> Redis
-      Redis --> API
-      API --> Postgres
-      API -->|"/metrics"| Prom[Prometheus]
-      API -->|traces| Jaeger
+    subgraph APIService["API Service"]
+      API_Svc[Go Gin Server]
+      API_Svc --> Redis
+      Redis --> API_Svc
+      API_Svc --> Postgres
+      API_Svc -->|"/metrics"| Prom[Prometheus]
+      API_Svc -->|traces| Jaeger[Jaeger]
     end
 
     subgraph Network["Service & Ingress"]
       Svc[Service: rickmorty-api]
       Ingress[Ingress → nginx]
-      API --> Svc
+      API_Svc --> Svc
       Svc --> Ingress
       Ingress -.-> Client[Client / Browser]
     end
 
     subgraph Obs["Observability Stack"]
-      Prom --> Graf[Grafana]
+      Prom --> Graf[Grafana Dashboard]
       Jaeger --> Graf
       Prom --> AM[Alertmanager]
       AM --> Pager[On-Call / PagerDuty]
     end
+
   end
 
-  %% Link CI/CD to Kubernetes
-  Deploy -.->|"helm charts & images"| K8s
+  %% CI/CD → Kubernetes link
+  Deploy -.->|"helm pulls charts & images"| K8s
+
 
 
