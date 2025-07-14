@@ -238,14 +238,40 @@ jobs:
         run: |
           kubectl label configmap rickmorty-grafana-dashboard \
             grafana_dashboard=1 -n monitoring --overwrite
+      
+      - name: Create ServiceMonitor for RickMorty API
+        run: |
+          # fetch the name of the first port on the Service
+          PORT_NAME=$(kubectl get svc rickmorty-app-rickmorty-api-service -n rickmorty \
+            -o jsonpath='{.spec.ports[0].name}')
+          echo "Using port name: $PORT_NAME"
+
+          # apply a ServiceMonitor that uses that port name
+          cat <<EOF | kubectl apply -f -
+          apiVersion: monitoring.coreos.com/v1
+          kind: ServiceMonitor
+          metadata:
+            name: rickmorty-api-sm
+            namespace: monitoring
+            labels:
+              release: monitoring
+          spec:
+            selector:
+              matchLabels:
+                app: rickmorty-api
+            namespaceSelector:
+              matchNames:
+                - rickmorty
+            endpoints:
+              - port: ${PORT_NAME}
+                path: /metrics
+                interval: 30s
+          EOF
+
 
       - name: Wait for Grafana Rollout
         run: kubectl rollout status deployment monitoring-grafana -n monitoring --timeout=180s
 
-      # - name: Verify Grafana Ingress Access
-      #   run: |
-      #     EXTERNAL_IP=$(kubectl get svc ingress-nginx-controller -n ingress-nginx -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-      #     curl -k -H "Host: grafana.127.0.0.1.nip.io" https://${EXTERNAL_IP}
       
       - name: Download and configure ngrok
         run: |
