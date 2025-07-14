@@ -116,77 +116,53 @@ A service that fetches, caches, and exposes Rick & Morty character data with obs
 
 ```mermaid
 flowchart LR
+
   %% CI/CD Pipeline
   subgraph CICD["CI/CD Pipeline"]
-    style CICD fill:#eef,stroke:#333,stroke-width:2px
-    Repo[Code Repository]:::repo
-    GA[GitHub Actions Runner]:::ci
+    Repo[Code Repository]
+    GA[GitHub Actions Runner]
     Repo --> GA
-    GA --> BuildDocker[Build & Test Docker Images]:::build
-    BuildDocker --> PushDocker[Push to Container Registry]:::registry
-    GA --> BuildHelm[Package Helm Chart]:::build
-    BuildHelm --> PushHelm[Push to OCI Registry]:::registry
-    GA --> Deploy[Deploy via Helm]:::deploy
+    GA --> BuildDocker[Build & Test Docker Images]
+    BuildDocker --> PushDocker[Push to Container Registry]
+    GA --> BuildHelm[Package Helm Chart]
+    BuildHelm --> PushHelm[Push Helm Chart to OCI Registry]
+    GA --> Deploy[Deploy via Helm]
   end
 
   %% Kubernetes Cluster
-  subgraph Kubernetes["Kubernetes Cluster"]
-    style Kubernetes fill:#ffd,stroke:#333,stroke-width:2px
-
+  subgraph K8s["Kubernetes Cluster"]
     subgraph Ingest["Ingest Pipeline"]
-      style Ingest fill:#f9f,stroke:#333,stroke-width:1px
-      IC[InitContainer / CronJob]:::ingest
-      IC --> Redis[Redis Cache]:::redis
-      IC --> Postgres[(PostgreSQL)]:::db
+      IC[InitContainer / CronJob]
+      IC --> Redis[Redis Cache]
+      IC --> Postgres[(PostgreSQL)]
     end
 
     subgraph API["API Service"]
-      style API fill:#afa,stroke:#333,stroke-width:1px
-      API[Go Gin Server]:::api
+      API[Go Gin Server]
       API --> Redis
       Redis --> API
       API --> Postgres
-      API -->|`/metrics`| Prom[(Prometheus)]:::prom
-      API -->|traces| JAE[(Jaeger)]:::trace
+      API -->|"/metrics"| Prom[Prometheus]
+      API -->|traces| Jaeger
     end
 
-    subgraph Networking["Service & Ingress"]
-      style Networking fill:#ffe,stroke:#333,stroke-width:1px
-      Svc[Service: rickmorty-api]:::svc
-      Ingress[Ingress → nginx]:::ing
+    subgraph Network["Service & Ingress"]
+      Svc[Service: rickmorty-api]
+      Ingress[Ingress → nginx]
       API --> Svc
       Svc --> Ingress
-      Ingress -.→ Clients[Client / Browser]:::client
+      Ingress -.-> Client[Client / Browser]
     end
 
-    subgraph Observability["Observability Stack"]
-      style Observability fill:#ddf,stroke:#333,stroke-width:1px
-      Prom --> Graf[Grafana Dashboard]:::gf
-      JAE --> Graf
-      Prom --> AlertMgr[Alertmanager]:::am
-      AlertMgr --> Oncall[On-Call / PagerDuty]:::pager
+    subgraph Obs["Observability Stack"]
+      Prom --> Graf[Grafana]
+      Jaeger --> Graf
+      Prom --> AM[Alertmanager]
+      AM --> Pager[On-Call / PagerDuty]
     end
   end
 
-  %% Arrows from CI/CD to Kubernetes
-  Deploy -.->|Helm pulls images & charts| Kubernetes
+  %% Link CI/CD to Kubernetes
+  Deploy -.->|"helm charts & images"| K8s
 
-  %% Class definitions
-  classDef repo        fill:#ccf,stroke:#33f;
-  classDef ci          fill:#cfc,stroke:#3a3;
-  classDef build       fill:#fdd,stroke:#f33;
-  classDef registry    fill:#dfd,stroke:#393;
-  classDef deploy      fill:#ffd,stroke:#d95;
-  classDef ingest      fill:#fbb,stroke:#911;
-  classDef redis       fill:#fcf,stroke:#909;
-  classDef db          fill:#cff,stroke:#099;
-  classDef api         fill:#dfd,stroke:#080;
-  classDef prom        fill:#cff,stroke:#099;
-  classDef trace       fill:#fcc,stroke:#909;
-  classDef svc         fill:#efe,stroke:#393;
-  classDef ing         fill:#ffe,stroke:#993;
-  classDef client      fill:#eef,stroke:#339;
-  classDef gf          fill:#cfc,stroke:#393;
-  classDef am          fill:#fcc,stroke:#933;
-  classDef pager       fill:#fcc,stroke:#933;
 
