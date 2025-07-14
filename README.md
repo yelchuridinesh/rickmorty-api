@@ -115,59 +115,78 @@ A service that fetches, caches, and exposes Rick & Morty character data with obs
 
 
 ```mermaid
-flowchart TD
-  %% Ingest Pipeline
-  subgraph Ingest_Pipeline["Ingest Pipeline (InitContainer/CronJob)"]
-    style Ingest_Pipeline fill:#f9f,stroke:#333,stroke-width:2px
-    A[RickMorty Ingest Client]:::ingest
-    A -->|Fetch & Filter| Redis[Redis Cache]:::redis
-    A -->|Persist| Postgres[(PostgreSQL)]:::db
+flowchart LR
+  %% CI/CD Pipeline
+  subgraph CICD["CI/CD Pipeline"]
+    style CICD fill:#eef,stroke:#333,stroke-width:2px
+    Repo[Code Repository]:::repo
+    GA[GitHub Actions Runner]:::ci
+    Repo --> GA
+    GA --> BuildDocker[Build & Test Docker Images]:::build
+    BuildDocker --> PushDocker[Push to Container Registry]:::registry
+    GA --> BuildHelm[Package Helm Chart]:::build
+    BuildHelm --> PushHelm[Push to OCI Registry]:::registry
+    GA --> Deploy[Deploy via Helm]:::deploy
   end
 
-  %% API Service
-  subgraph API_Service["API Service (Gin)"]
-    style API_Service fill:#afa,stroke:#333,stroke-width:2px
-    B[Go Gin Server]:::api
-    B -->|Cache Lookup| Redis
-    Redis -->|Cache Miss| Postgres
-    Postgres -->|Data| B
-    B -->|Expose| Characters[GET /characters]:::endpoint
-    B -->|Health| Health[GET /healthcheck]:::endpoint
-    B -->|Metrics| Prometheus[(Prometheus)]:::prom
-    B -->|Traces| Jaeger[(Jaeger)]:::trace
-  end
-
-  %% Kubernetes Resources
-  subgraph Kubernetes["Kubernetes"]
+  %% Kubernetes Cluster
+  subgraph Kubernetes["Kubernetes Cluster"]
     style Kubernetes fill:#ffd,stroke:#333,stroke-width:2px
-    Ingest_Pipeline -->|Job Pod| API_Service
-    API_Service -->|ClusterIP| Svc[Service: rickmorty-api]:::svc
-    Svc -->|Ingress| Ingress[Ingress → nginx]:::ing
-    Ingress -.->|TLS & Routing| User[Client/Browser]:::client
+
+    subgraph Ingest["Ingest Pipeline"]
+      style Ingest fill:#f9f,stroke:#333,stroke-width:1px
+      IC[InitContainer / CronJob]:::ingest
+      IC --> Redis[Redis Cache]:::redis
+      IC --> Postgres[(PostgreSQL)]:::db
+    end
+
+    subgraph API["API Service"]
+      style API fill:#afa,stroke:#333,stroke-width:1px
+      API[Go Gin Server]:::api
+      API --> Redis
+      Redis --> API
+      API --> Postgres
+      API -->|`/metrics`| Prom[(Prometheus)]:::prom
+      API -->|traces| JAE[(Jaeger)]:::trace
+    end
+
+    subgraph Networking["Service & Ingress"]
+      style Networking fill:#ffe,stroke:#333,stroke-width:1px
+      Svc[Service: rickmorty-api]:::svc
+      Ingress[Ingress → nginx]:::ing
+      API --> Svc
+      Svc --> Ingress
+      Ingress -.→ Clients[Client / Browser]:::client
+    end
+
+    subgraph Observability["Observability Stack"]
+      style Observability fill:#ddf,stroke:#333,stroke-width:1px
+      Prom --> Graf[Grafana Dashboard]:::gf
+      JAE --> Graf
+      Prom --> AlertMgr[Alertmanager]:::am
+      AlertMgr --> Oncall[On-Call / PagerDuty]:::pager
+    end
   end
 
-  %% Observability Stack
-  subgraph Observability["Observability"]
-    style Observability fill:#ddf,stroke:#333,stroke-width:2px
-    Prometheus --> Grafana[(Grafana Dashboard)]:::gf
-    Jaeger --> Grafana
-    Prometheus --> Alertmanager[(Alertmanager)]:::am
-    Alertmanager --> Pager[On‐Call / PagerDuty]:::pager
-  end
+  %% Arrows from CI/CD to Kubernetes
+  Deploy -.->|Helm pulls images & charts| Kubernetes
 
   %% Class definitions
-  classDef ingest fill:#fdd,stroke:#900,stroke-width:1px;
-  classDef redis fill:#fcf,stroke:#909,stroke-width:1px;
-  classDef db fill:#ccf,stroke:#339,stroke-width:1px;
-  classDef api fill:#dfd,stroke:#080,stroke-width:1px;
-  classDef endpoint fill:#ffd,stroke:#880,stroke-width:1px;
-  classDef prom fill:#cff,stroke:#099,stroke-width:1px;
-  classDef trace fill:#fcc,stroke:#909,stroke-width:1px;
-  classDef svc fill:#efe,stroke:#393,stroke-width:1px;
-  classDef ing fill:#ffe,stroke:#993,stroke-width:1px;
-  classDef client fill:#eef,stroke:#339,stroke-width:1px;
-  classDef gf fill:#cfc,stroke:#393,stroke-width:1px;
-  classDef am fill:#fcc,stroke:#933,stroke-width:1px;
-  classDef pager fill:#fcc,stroke:#933,stroke-width:1px;
+  classDef repo        fill:#ccf,stroke:#33f;
+  classDef ci          fill:#cfc,stroke:#3a3;
+  classDef build       fill:#fdd,stroke:#f33;
+  classDef registry    fill:#dfd,stroke:#393;
+  classDef deploy      fill:#ffd,stroke:#d95;
+  classDef ingest      fill:#fbb,stroke:#911;
+  classDef redis       fill:#fcf,stroke:#909;
+  classDef db          fill:#cff,stroke:#099;
+  classDef api         fill:#dfd,stroke:#080;
+  classDef prom        fill:#cff,stroke:#099;
+  classDef trace       fill:#fcc,stroke:#909;
+  classDef svc         fill:#efe,stroke:#393;
+  classDef ing         fill:#ffe,stroke:#993;
+  classDef client      fill:#eef,stroke:#339;
+  classDef gf          fill:#cfc,stroke:#393;
+  classDef am          fill:#fcc,stroke:#933;
+  classDef pager       fill:#fcc,stroke:#933;
 
-  end
