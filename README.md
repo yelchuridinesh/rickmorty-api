@@ -112,3 +112,37 @@ A service that fetches, caches, and exposes Rick & Morty character data with obs
 ## GitOps Consideration
 
 > **Note**: This project uses CI/CD-based installations for demonstration. In a production environment, consider adopting a GitOps approach (e.g., ArgoCD) to manage Helm chart synchronization across multiple repositories and namespaces more cleanly.Also, I haven't used Umbrella structure as it creates lot of complexity 
+
+
+```mermaid
+flowchart TD
+  subgraph Ingest_Pipeline["Ingest Pipeline (InitContainer/CronJob)"]
+    A[RickMorty Ingest Client]
+    A -->|Fetch & Filter| Redis[Redis Cache]
+    A -->|Persist| Postgres[(PostgreSQL)]
+  end
+
+  subgraph API_Service["API Service (Gin)"]
+    B[Go Gin Server]
+    B -->|Cache Lookup| Redis
+    Redis -->|Cache Miss| Postgres
+    Postgres -->|Data| B
+    B -->|Expose| Characters[GET /characters]
+    B -->|Health| Health[GET /healthcheck]
+    B -->|Metrics| Prometheus[(Prometheus)]
+    B -->|Traces| Jaeger[(Jaeger)]
+  end
+
+  subgraph Kubernetes["Kubernetes"]
+    Ingest_Pipeline -->|Job Pod| API_Service
+    API_Service -->|ClusterIP| Svc[Service: rickmorty-api]
+    Svc -->|Ingress| Ingress[Ingress ⟶ nginx]
+    Ingress -.->|TLS & Routing| User[Client/Browser]
+  end
+
+  subgraph Observability["Observability"]
+    Prometheus --> Grafana[(Grafana Dashboard)]
+    Jaeger --> Grafana
+    Prometheus --> Alertmanager[(Alertmanager)]
+    Alertmanager --> Pager[On-Call / PagerDuty]
+  end
