@@ -559,9 +559,46 @@ jobs:
         run: |
           curl -s 'http://localhost:9090/api/v1/targets?state=active'   | jq '.data.activeTargets[] | select(.labels.namespace=="rickmorty")'
 
-
+      - name: Install Chaos Mesh CRDs
+        run: |
+          kubectl apply -f https://mirrors.chaos-mesh.org/v1.4.0/crd.yaml
+      
+      - name: Deploy Chaos Mesh controllers
+        run: |
+          helm repo add chaos-mesh https://charts.chaos-mesh.org
+          helm repo update
+          helm upgrade --install chaos-mesh chaos-mesh/chaos-mesh \
+            --namespace chaos-testing --create-namespace \
+            --set dashboard.create=false
+      - name: Apply PodChaos (kill one API pod)
+        run: |
+          cat <<EOF | kubectl apply -f -
+          apiVersion: chaos-mesh.org/v1alpha1
+          kind: PodChaos
+          metadata:
+            name: rickmorty-pod-kill
+            namespace: chaos-testing
+          spec:
+            action: pod-kill
+            mode: one
+            selector:
+              namespaces:
+                - rickmorty
+              labelSelectors:
+                app: rickmorty-app-rickmorty-api-service
+            duration: "30s"
+            scheduler:
+              cron: "@every 1m"
+          EOF
+      
+      - name: Wait for PodChaos to take effect
+        run: sleep 40 
+      
+      - name: pods in rickmorty namespace
+        run: kubectl get deploy rickmorty-app-rickmorty-api -n rickmorty
+          
       - name: Start SSH session (debug)
         uses: mxschmitt/action-tmate@v3
-        timeout-minutes: 30
+        timeout-minutes: 40
         continue-on-error: true
 
