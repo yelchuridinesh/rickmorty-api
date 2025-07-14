@@ -58,11 +58,19 @@ jobs:
           helm repo update
           kubectl create namespace observability || true
           helm install jaeger jaegertracing/jaeger \
-            --namespace observability \
-            --set provisionDataStore.cassandra=false \
-            --set storage.type=memory \
-            --set query.basePath="/" \
-            --set ingress.enabled=false
+            --namespace observability --create-namespace \
+            --set agent.strategy=DaemonSet \
+            --set collector.enabled=true \
+            --set query.enabled=true \
+            --set ingress.enabled=true \
+            --set ingress.ingressClassName=nginx \
+            --set-string ingress.annotations."nginx\.ingress\.kubernetes\.io/ssl-redirect"="true" \
+            --set-string ingress.annotations."cert-manager\.io/cluster-issuer"="selfsigned-issuer" \
+            --set ingress.hosts[0]=jaeger.127.0.0.1.nip.io \
+            --set ingress.paths[0]="/" \
+            --set ingress.tls[0].hosts[0]=jaeger.127.0.0.1.nip.io \
+            --set ingress.tls[0].secretName=jaeger-tls \
+            --set storage.type=memory
 
 
       - name: Install ingress-nginx on rickmorty namespace

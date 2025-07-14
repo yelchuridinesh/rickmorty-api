@@ -112,6 +112,8 @@ A service that fetches, caches, and exposes Rick & Morty character data with obs
 ## GitOps Consideration
 
 > **Note**: This project uses CI/CD-based installations for demonstration. In a production environment, consider adopting a GitOps approach (e.g., ArgoCD) to manage Helm chart synchronization across multiple repositories and namespaces more cleanly.Also, I haven't used Umbrella structure as it creates lot of complexity 
+>
+> [![CD Pipeline](https://github.com/yelchuridinesh/rickmorty-api/actions/workflows/k8s-cd.yaml/badge.svg)](https://github.com/yelchuridinesh/rickmorty-api/actions/workflows/k8s-cd.yaml)
 
 
 ```mermaid
