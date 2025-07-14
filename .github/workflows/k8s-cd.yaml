@@ -22,28 +22,6 @@ jobs:
           cpus: 2
           memory: 4096
           kubernetes-version: v1.30
-
-
-      # - name: Write kind cluster config
-      #   run: |
-      #     cat <<EOF > kind-config.yaml
-      #     kind: Cluster
-      #     apiVersion: kind.x-k8s.io/v1alpha4
-      #     nodes:
-      #       - role: control-plane
-      #         extraPortMappings:
-      #           - containerPort: 80
-      #             hostPort: 80
-      #           - containerPort: 443
-      #             hostPort: 443
-      #     EOF
-
-
-      # - name: Set up Kind cluster
-      #   uses: helm/kind-action@v1.8.0
-      #   with:
-      #     cluster_name: rickmorty-cluster
-      #     config: kind-config.yaml
       
       - name: Verify cluster is ready
         run: kubectl get nodes
@@ -152,13 +130,23 @@ jobs:
           EXTERNAL_IP=$(kubectl get svc ingress-nginx-controller -n ingress-nginx -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
           echo $EXTERNAL_IP
 
-      - name: Run integration test against API Ingress
+      - name: Run integration test against API Ingress for /Characters
         run: |
           echo "Waiting for Ingress to become ready..."
           sleep 10
           EXTERNAL_IP=$(kubectl get svc ingress-nginx-controller -n ingress-nginx -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
           echo $EXTERNAL_IP
           curl -k -H "Host: rickmorty-helm-git.127.0.0.1.nip.io" https://${EXTERNAL_IP}/characters?page=1&limit=5
+      
+      - name: Run integration test against API Ingress for /healthcheck 
+        run: |
+          EXTERNAL_IP=$(kubectl get svc ingress-nginx-controller -n ingress-nginx -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+          curl -k -H "Host: rickmorty-helm-git.127.0.0.1.nip.io" https://${EXTERNAL_IP}/healthcheck
+      
+      - name: Run integration test against API Ingress for /metrics 
+        run: |
+          EXTERNAL_IP=$(kubectl get svc ingress-nginx-controller -n ingress-nginx -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+          curl -k -H "Host: rickmorty-helm-git.127.0.0.1.nip.io" https://${EXTERNAL_IP}/metrics/grep -E "api_request_duration_seconds|api_cache_hits_total|api_cache_misses_total|api_characters_processed_total"
 
       - name: Generate Rick and Morty Grafana Dashboard JSON
         run: |
@@ -528,7 +516,7 @@ jobs:
 
 
       - name: Wait for Grafana Rollout
-        run: kubectl rollout status deployment monitoring-grafana -n monitoring --timeout=180s
+        run: kubectl rollout status deployment monitoring-grafana -n monitoring --timeout=120s
 
       
       - name: Download and configure ngrok
@@ -556,7 +544,12 @@ jobs:
       - name: Print one of the Alerts
         run: |
           kubectl -n monitoring port-forward svc/prometheus-operated 9090:9090 &
+          sleep 30 #give time for the alert to reflect
           curl -s http://localhost:9090/api/v1/rules   | jq '.data.groups[] | select(.name=="rickmorty-app-rickmorty-api-low-throughput")'
+      
+      - name : check scrape target 
+        run: |
+          curl -s 'http://localhost:9090/api/v1/targets?state=active'   | jq '.data.activeTargets[] | select(.labels.namespace=="rickmorty")'
 
 
       - name: Start SSH session (debug)
