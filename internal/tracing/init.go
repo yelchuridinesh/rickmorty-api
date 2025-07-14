@@ -4,7 +4,6 @@ package tracing
 import (
 	"context"
 	"log"
-	"os"
 	"time"
 
 	"go.opentelemetry.io/otel"
@@ -16,8 +15,8 @@ import (
 
 func InitTracer(serviceName string) func(context.Context) {
 	// Determine the collector endpoint:
-	
-	endpoint: = "http://jaeger-collector.observability.svc.cluster.local:14268/api/traces"
+
+	endpoint := "http://jaeger-collector.observability.svc.cluster.local:14268/api/traces"
 	log.Printf("[OTEL] Using Jaeger endpoint: %s", endpoint)
 
 	// Create the exporter:
