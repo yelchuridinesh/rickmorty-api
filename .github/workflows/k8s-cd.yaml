@@ -574,7 +574,7 @@ jobs:
           kind: PodChaos
           metadata:
             name: rickmorty-pod-kill
-            namespace: chaos-testing
+            namespace: chaos-mesh 
           spec:
             action: pod-kill
             mode: one
@@ -583,9 +583,7 @@ jobs:
                 - rickmorty
               labelSelectors:
                 app: rickmorty-app-rickmorty-api-service
-            duration: "30s"
-            scheduler:
-              cron: "@every 1m"
+            duration: "60s"
           EOF
       
       - name: Wait for PodChaos to take effect
