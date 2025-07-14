@@ -116,33 +116,58 @@ A service that fetches, caches, and exposes Rick & Morty character data with obs
 
 ```mermaid
 flowchart TD
+  %% Ingest Pipeline
   subgraph Ingest_Pipeline["Ingest Pipeline (InitContainer/CronJob)"]
-    A[RickMorty Ingest Client]
-    A -->|Fetch & Filter| Redis[Redis Cache]
-    A -->|Persist| Postgres[(PostgreSQL)]
+    style Ingest_Pipeline fill:#f9f,stroke:#333,stroke-width:2px
+    A[RickMorty Ingest Client]:::ingest
+    A -->|Fetch & Filter| Redis[Redis Cache]:::redis
+    A -->|Persist| Postgres[(PostgreSQL)]:::db
   end
 
+  %% API Service
   subgraph API_Service["API Service (Gin)"]
-    B[Go Gin Server]
+    style API_Service fill:#afa,stroke:#333,stroke-width:2px
+    B[Go Gin Server]:::api
     B -->|Cache Lookup| Redis
     Redis -->|Cache Miss| Postgres
     Postgres -->|Data| B
-    B -->|Expose| Characters[GET /characters]
-    B -->|Health| Health[GET /healthcheck]
-    B -->|Metrics| Prometheus[(Prometheus)]
-    B -->|Traces| Jaeger[(Jaeger)]
+    B -->|Expose| Characters[GET /characters]:::endpoint
+    B -->|Health| Health[GET /healthcheck]:::endpoint
+    B -->|Metrics| Prometheus[(Prometheus)]:::prom
+    B -->|Traces| Jaeger[(Jaeger)]:::trace
   end
 
+  %% Kubernetes Resources
   subgraph Kubernetes["Kubernetes"]
+    style Kubernetes fill:#ffd,stroke:#333,stroke-width:2px
     Ingest_Pipeline -->|Job Pod| API_Service
-    API_Service -->|ClusterIP| Svc[Service: rickmorty-api]
-    Svc -->|Ingress| Ingress[Ingress ⟶ nginx]
-    Ingress -.->|TLS & Routing| User[Client/Browser]
+    API_Service -->|ClusterIP| Svc[Service: rickmorty-api]:::svc
+    Svc -->|Ingress| Ingress[Ingress → nginx]:::ing
+    Ingress -.->|TLS & Routing| User[Client/Browser]:::client
   end
 
+  %% Observability Stack
   subgraph Observability["Observability"]
-    Prometheus --> Grafana[(Grafana Dashboard)]
+    style Observability fill:#ddf,stroke:#333,stroke-width:2px
+    Prometheus --> Grafana[(Grafana Dashboard)]:::gf
     Jaeger --> Grafana
-    Prometheus --> Alertmanager[(Alertmanager)]
-    Alertmanager --> Pager[On-Call / PagerDuty]
+    Prometheus --> Alertmanager[(Alertmanager)]:::am
+    Alertmanager --> Pager[On‐Call / PagerDuty]:::pager
+  end
+
+  %% Class definitions
+  classDef ingest fill:#fdd,stroke:#900,stroke-width:1px;
+  classDef redis fill:#fcf,stroke:#909,stroke-width:1px;
+  classDef db fill:#ccf,stroke:#339,stroke-width:1px;
+  classDef api fill:#dfd,stroke:#080,stroke-width:1px;
+  classDef endpoint fill:#ffd,stroke:#880,stroke-width:1px;
+  classDef prom fill:#cff,stroke:#099,stroke-width:1px;
+  classDef trace fill:#fcc,stroke:#909,stroke-width:1px;
+  classDef svc fill:#efe,stroke:#393,stroke-width:1px;
+  classDef ing fill:#ffe,stroke:#993,stroke-width:1px;
+  classDef client fill:#eef,stroke:#339,stroke-width:1px;
+  classDef gf fill:#cfc,stroke:#393,stroke-width:1px;
+  classDef am fill:#fcc,stroke:#933,stroke-width:1px;
+  classDef pager fill:#fcc,stroke:#933,stroke-width:1px;
+
   end
