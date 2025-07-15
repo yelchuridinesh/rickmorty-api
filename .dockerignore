@@ -39,3 +39,5 @@ Thumbs.db
 # Kubernetes / Helm charts (if stored in this repo)
 charts/
 helm/
+
+docs/
