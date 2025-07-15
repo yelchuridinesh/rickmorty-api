@@ -558,6 +558,11 @@ jobs:
       - name : check scrape target 
         run: |
           curl -s 'http://localhost:9090/api/v1/targets?state=active'   | jq '.data.activeTargets[] | select(.labels.namespace=="rickmorty")'
+
+      - name : install CRDs
+        run: |
+          kubectl apply -f https://raw.githubusercontent.com/chaos-mesh/chaos-mesh/master/config/crd/bases/chaos-mesh.org_podchaos.yaml
+          kubectl apply -f https://raw.githubusercontent.com/chaos-mesh/chaos-mesh/master/config/crd/bases/chaos-mesh.org_networkchaos.yaml
       
       - name: Deploy Chaos Mesh controllers
         run: |
@@ -565,7 +570,8 @@ jobs:
           helm repo update
           helm upgrade --install chaos-mesh chaos-mesh/chaos-mesh \
             --namespace chaos-mesh --create-namespace \
-            --set dashboard.create=false
+            --set dashboard.create=false \
+            --set installCRDs=false
             
       - name: Apply PodChaos (kill one API pod)
         run: |
