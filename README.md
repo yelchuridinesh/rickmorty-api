@@ -169,7 +169,5 @@ flowchart LR
   %% CI/CD → Kubernetes link
   Deploy -.->|"helm pulls charts & images"| K8s
 
-  ![User login screen](docs/Grafana-dashboard.png)
-
 
 
