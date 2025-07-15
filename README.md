@@ -8,7 +8,7 @@ A service that fetches, caches, and exposes Rick & Morty character data with obs
 * **Caching**: In-memory caching with Redis. Configurable TTL (default: 5 minutes).
 * **Persistence**: Stores character data in PostgreSQL.
 * **REST API**:
-
+  open API doc -: https://app.swaggerhub.com/apis/yelchuridinesh/RickMorty/1.0.0
   * `GET /characters` with pagination, sorting (by `name` or `id`), validation, and rate limiting.
   * `GET /healthcheck` to verify Redis and PostgreSQL connectivity.
   * `GET /metrics` to expose Prometheus metrics.
