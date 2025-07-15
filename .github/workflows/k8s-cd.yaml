@@ -188,8 +188,8 @@ jobs:
         run: |
           curl -s 'http://localhost:9090/api/v1/targets?state=active'   | jq '.data.activeTargets[] | select(.labels.namespace=="rickmorty")'
           
-      - name: Start SSH session (debug)
-        uses: mxschmitt/action-tmate@v3
-        timeout-minutes: 40
-        continue-on-error: true
+      # - name: Start SSH session (debug)
+      #   uses: mxschmitt/action-tmate@v3
+      #   timeout-minutes: 40
+      #   continue-on-error: true
 
