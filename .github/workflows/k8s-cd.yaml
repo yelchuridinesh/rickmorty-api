@@ -572,6 +572,9 @@ jobs:
             --namespace chaos-mesh --create-namespace \
             --set dashboard.create=false \
             --set installCRDs=false
+            --wait --timeout=3m
+          kubectl get pods --namespace chaos-mesh -l app.kubernetes.io/instance=chaos-mesh
+
             
       - name: Apply PodChaos (kill one API pod)
         run: |
